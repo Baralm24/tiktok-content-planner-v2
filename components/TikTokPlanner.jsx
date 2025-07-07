@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Card, CardContent } from "../components/ui/card";
 import { Loader2 } from "lucide-react";
 
 export default function TikTokPlanner() {
@@ -10,56 +14,62 @@ export default function TikTokPlanner() {
   const generateIdeas = async () => {
     setLoading(true);
     setIdeas("");
-    const response = await fetch("/api/generate-tiktok-ideas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ niche, trends }),
-    });
-    const data = await response.json();
-    setIdeas(data.ideas);
-    setLoading(false);
+    try {
+      const response = await fetch("/api/generate-tiktok-ideas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ niche, trends }),
+      });
+
+      const data = await response.json();
+      setIdeas(data.ideas || "No ideas received.");
+    } catch (error) {
+      setIdeas("❌ Something went wrong.");
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto flex flex-col gap-4">
-      <h1 className="text-xl font-bold text-center">TikTok Content Planner</h1>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-blue-50 p-4">
+      <div className="max-w-md mx-auto bg-white shadow-xl rounded-2xl p-6 space-y-4">
+        <h1 className="text-2xl font-bold text-center text-blue-700">🎬 TikTok Content Planner</h1>
+        <Input
+          placeholder="Your content niche (e.g., fashion, fitness)"
+          value={niche}
+          onChange={(e) => setNiche(e.target.value)}
+        />
+        <Textarea
+          placeholder="Trending hashtags or sounds (comma-separated)"
+          value={trends}
+          onChange={(e) => setTrends(e.target.value)}
+          rows={4}
+        />
+        <Button onClick={generateIdeas} disabled={loading} className="w-full">
+          {loading ? <Loader2 className="animate-spin h-4 w-4" /> : "✨ Generate Ideas"}
+        </Button>
 
-      <input
-        className="border border-gray-300 rounded px-3 py-2"
-        placeholder="Your content niche (e.g., fashion, fitness)"
-        value={niche}
-        onChange={(e) => setNiche(e.target.value)}
-      />
-
-      <textarea
-        className="border border-gray-300 rounded px-3 py-2"
-        placeholder="Trending hashtags or sounds (comma-separated)"
-        value={trends}
-        onChange={(e) => setTrends(e.target.value)}
-        rows={4}
-      />
-
-      <button
-        onClick={generateIdeas}
-        disabled={loading}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="animate-spin h-4 w-4" />
-            Generating...
-          </span>
-        ) : (
-          "Generate Ideas"
+        {ideas && (
+          <Card>
+            <CardContent>
+              <h2 className="font-semibold mb-2 text-blue-800">📌 Today's Suggestions:</h2>
+              <pre className="whitespace-pre-wrap text-sm">{ideas}</pre>
+              <Button
+                className="mt-2"
+                onClick={() => {
+                  navigator.clipboard.writeText(ideas);
+                  alert("✅ Ideas copied to clipboard!");
+                }}
+              >
+                📋 Copy Ideas
+              </Button>
+            </CardContent>
+          </Card>
         )}
-      </button>
-
-      {ideas && (
-        <div className="border border-gray-200 rounded p-4 shadow">
-          <h2 className="font-semibold mb-2">Today's Suggestions:</h2>
-          <pre className="whitespace-pre-wrap text-sm">{ideas}</pre>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
